@@ -223,20 +223,20 @@ class CalculatorDialog(QDialog):
         grid.setSpacing(6)
 
         buttons = [
-            ("MC", 0, 0, "mc",      "mem"),
-            ("MR", 0, 1, "mr",      "mem"),
-            ("M+", 0, 2, "mplus",   "mem"),
-            ("M-", 0, 3, "mminus",  "mem"),
+            ("MC", 0, 0, "mc", "mem"),
+            ("MR", 0, 1, "mr", "mem"),
+            ("M+", 0, 2, "mplus", "mem"),
+            ("M-", 0, 3, "mminus", "mem"),
 
-            ("C",  1, 0, "clear",       "fn"),
+            ("C", 1, 0, "clear", "fn"),
             ("CE", 1, 1, "clear_entry", "fn"),
-            ("⌫", 1, 2, "backspace",    "fn"),
-            ("±",  1, 3, "sign",        "fn"),
+            ("⌫", 1, 2, "backspace", "fn"),
+            ("±", 1, 3, "sign", "fn"),
 
-            ("(",  2, 0, "lparen",  "op"),
-            (")",  2, 1, "rparen",  "op"),
-            ("%",  2, 2, "percent", "op"),
-            ("÷",  2, 3, "/",       "op"),
+            ("(", 2, 0, "lparen", "op"),
+            (")", 2, 1, "rparen", "op"),
+            ("%", 2, 2, "percent", "op"),
+            ("÷", 2, 3, "/", "op"),
 
             ("7", 3, 0, "7", "num"),
             ("8", 3, 1, "8", "num"),
@@ -436,9 +436,9 @@ class CalculatorDialog(QDialog):
             return
         prefix = text[:token_start]
         if prefix.endswith(self._SUB) and (
-            len(prefix) == 1
-            or prefix[-2] in self._OPERATORS
-            or prefix[-2] == "("
+            len(prefix) == 1 or
+            prefix[-2] in self._OPERATORS or
+            prefix[-2] == "("
         ):
             new_text = prefix[:-1] + token
         else:
