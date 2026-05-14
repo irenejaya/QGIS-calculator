@@ -3,8 +3,8 @@ name=Calculator
 qgisMinimumVersion=3.34
 qgisMaximumVersion=4.99
 description=A simple in-QGIS calculator widget — quickly do arithmetic without leaving QGIS.
-about=Adds a small calculator dialog accessible from the Plugins menu and toolbar. Supports keyboard input, basic arithmetic (+, -, *, /), parentheses, percent, sign toggle, decimals, memory (MC/MR/M+/M-), and a scrollable history.
-version=1.0.0
+about=Adds a small calculator dialog accessible from the Plugins menu and toolbar. Supports keyboard input, basic arithmetic (+, -, *, /), parentheses, percent, sign toggle, decimals, memory (MC/MR/M+/M-), and a scrollable history. The result is selectable and copyable via a copy button or Ctrl+C.
+version=1.0.1
 author=Irene Jaya
 email=
 tracker=https://github.com/irenejaya/QGIS-calculator/issues
@@ -17,3 +17,7 @@ deprecated=False
 tags=calculator,widget,utility,qt6,qgis4
 hasProcessingProvider=no
 supportsQt6=yes
+
+[changelog]
+1.0.1 - Result label is now selectable and copyable (copy button + Ctrl+C shortcut).
+1.0.0 - Initial release. Keyboard input, arithmetic, memory, history.
