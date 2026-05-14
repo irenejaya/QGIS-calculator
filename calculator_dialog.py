@@ -24,6 +24,7 @@ from typing import Optional
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QFont, QKeySequence, QShortcut
 from qgis.PyQt.QtWidgets import (
+    QApplication,
     QDialog,
     QFrame,
     QGridLayout,
@@ -99,6 +100,19 @@ def _format_number(value: float) -> str:
 
 
 # ---------------------------------------------------------------------------
+# SelectableLabel — QLabel whose text can be mouse-selected and Ctrl+C'd
+# ---------------------------------------------------------------------------
+class SelectableLabel(QLabel):
+    def __init__(self, text: str = "", parent: QWidget = None) -> None:
+        super().__init__(text, parent)
+        self.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse
+            | Qt.TextInteractionFlag.TextSelectableByKeyboard
+        )
+        self.setCursor(Qt.CursorShape.IBeamCursor)
+
+
+# ---------------------------------------------------------------------------
 # Dialog
 # ---------------------------------------------------------------------------
 class CalculatorDialog(QDialog):
@@ -128,7 +142,7 @@ class CalculatorDialog(QDialog):
             border: 1px solid #6c8a63;
             border-radius: 6px;
         }
-        QLineEdit#display, QLabel#resultLabel {
+        QLineEdit#display {
             background: transparent;
             border: none;
             color: #1a1a1a;
@@ -160,6 +174,10 @@ class CalculatorDialog(QDialog):
         self._build_ui()
         self._wire_shortcuts()
 
+        # Ensure the dialog itself receives keystrokes (not a focused button/edit).
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setFocus()
+
     # ------------------------------------------------------------------
     # UI construction
     # ------------------------------------------------------------------
@@ -186,20 +204,46 @@ class CalculatorDialog(QDialog):
         font_top.setPointSize(14)
         self.display.setFont(font_top)
         self.display.setPlaceholderText("0")
+        # Read-only + no focus: the dialog's keyPressEvent handles all input
+        # (so we can translate ASCII '*' '/' '-' into the pretty '×' '÷' '−').
+        self.display.setReadOnly(True)
+        self.display.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.display.returnPressed.connect(self._on_equals)
         screen_layout.addWidget(self.display)
 
         screen_layout.addStretch()
 
-        # Bottom line: the latest result (right-aligned, large).
-        self.result_label = QLabel("0")
+        # Bottom line: selectable result label + copy button.
+        result_row = QHBoxLayout()
+        result_row.setSpacing(6)
+
+        self.result_label = SelectableLabel("0")
         self.result_label.setObjectName("resultLabel")
         self.result_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         font_bot = QFont("Consolas")
         font_bot.setPointSize(22)
         font_bot.setBold(True)
         self.result_label.setFont(font_bot)
-        screen_layout.addWidget(self.result_label)
+        self.result_label.setStyleSheet(
+            "background: transparent; border: none; color: #1a1a1a;"
+        )
+        result_row.addWidget(self.result_label, 1)
+
+        self.btn_copy = QPushButton("⎘")
+        self.btn_copy.setToolTip("Copy result to clipboard (Ctrl+C)")
+        self.btn_copy.setFixedSize(32, 32)
+        self.btn_copy.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.btn_copy.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_copy.setStyleSheet(
+            "QPushButton { background: transparent; border: 1px solid #6c8a63;"
+            " border-radius: 4px; color: #2c6e35; font-size: 14pt; }"
+            "QPushButton:hover  { background: #b8d4b0; }"
+            "QPushButton:pressed{ background: #8ab88a; }"
+        )
+        self.btn_copy.clicked.connect(self._copy_result)
+        result_row.addWidget(self.btn_copy)
+
+        screen_layout.addLayout(result_row)
 
         root.addWidget(screen)
 
@@ -305,6 +349,7 @@ class CalculatorDialog(QDialog):
 
     def _wire_shortcuts(self) -> None:
         QShortcut(QKeySequence("Esc"), self, activated=lambda: self._handle_key("clear"))
+        QShortcut(QKeySequence("Ctrl+C"), self, activated=self._copy_result)
 
     # ------------------------------------------------------------------
     # Button handlers
@@ -538,6 +583,15 @@ class CalculatorDialog(QDialog):
             self._just_evaluated = False
 
     # ------------------------------------------------------------------
+    # Copy helper
+    # ------------------------------------------------------------------
+    def _copy_result(self) -> None:
+        """Copy the result label text to the clipboard."""
+        text = self.result_label.text()
+        if text and not text.startswith("Error"):
+            QApplication.clipboard().setText(text)
+
+    # ------------------------------------------------------------------
     # Keyboard handling
     # ------------------------------------------------------------------
     def keyPressEvent(self, event):  # noqa: N802 (Qt naming)
@@ -546,6 +600,14 @@ class CalculatorDialog(QDialog):
 
         if key in (Qt.Key.Key_Enter, Qt.Key.Key_Return, Qt.Key.Key_Equal):
             self._on_equals()
+            return
+        # Shift+8 on some layouts produces no text for '*' on key alone; the
+        # text-based check below also covers it, but we add an explicit Key_Asterisk.
+        if key == Qt.Key.Key_Asterisk:
+            self._append_operator("*")
+            return
+        if key == Qt.Key.Key_Slash:
+            self._append_operator("/")
             return
         if key == Qt.Key.Key_Backspace:
             self._backspace()
